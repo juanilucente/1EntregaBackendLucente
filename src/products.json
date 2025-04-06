@@ -1,0 +1,67 @@
+[
+  {
+    "id": "1",
+    "title": "Mouse Gamer",
+    "description": "Mouse con luces RGB y 8000 DPI",
+    "code": "MOU123",
+    "price": 3500,
+    "status": true,
+    "stock": 50,
+    "category": "Periféricos",
+    "thumbnails": [
+      "img/mouse1.png"
+    ]
+  },
+  {
+    "id": "2",
+    "title": "Teclado Mecánico",
+    "description": "Teclado con switches azules y retroiluminación",
+    "code": "TEC456",
+    "price": 7500,
+    "status": true,
+    "stock": 30,
+    "category": "Periféricos",
+    "thumbnails": [
+      "img/teclado1.png"
+    ]
+  },
+  {
+    "id": "3",
+    "title": "Monitor 24 pulgadas",
+    "description": "Monitor Full HD, 75Hz",
+    "code": "MON789",
+    "price": 45000,
+    "status": true,
+    "stock": 15,
+    "category": "Monitores",
+    "thumbnails": [
+      "img/monitor1.png"
+    ]
+  },
+  {
+    "id": "4",
+    "title": "Auriculares Bluetooth",
+    "description": "Auriculares con cancelación de ruido",
+    "code": "AUD999",
+    "price": 8000,
+    "status": true,
+    "stock": 20,
+    "category": "Audio",
+    "thumbnails": [
+      "img/auriculares1.png"
+    ]
+  },
+  {
+    "id": "5",
+    "title": "Auriculares Bluetooth2",
+    "description": "Auriculares con cancelación de ruido2",
+    "code": "AUD999",
+    "price": 8000,
+    "status": true,
+    "stock": 20,
+    "category": "Audio",
+    "thumbnails": [
+      "img/auriculares1.png"
+    ]
+  }
+]
