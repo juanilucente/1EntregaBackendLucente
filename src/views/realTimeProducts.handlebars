@@ -1,56 +1,47 @@
-{{!-- Esto hace que se use el layout de 'main.handlebars' --}}
-{{#extend 'main'}}
-  {{#content 'title'}}Productos en Tiempo Real{{/content}}
+<h1>Lista de Productos en Tiempo Real</h1>
+<ul id="product-list">
+  {{#each products}}
+    <li id="product-{{this.id}}">
+      <strong>{{this.title}}</strong><br>
+      Descripción: {{this.description}}<br>
+      Precio: ${{this.price}}<br>
+      Categoría: {{this.category}}<br>
+      <button onclick="deleteProduct({{this.id}})">Eliminar</button>
+    </li>
+  {{/each}}
+</ul>
 
-  <h1>Lista de Productos en Tiempo Real</h1>
-  <ul id="product-list">
-    {{#each products}}
-      <li id="product-{{this.id}}">
-        <strong>{{this.title}}</strong><br>
-        Descripción: {{this.description}}<br>
-        Precio: ${{this.price}}<br>
-        Categoría: {{this.category}}<br>
-        <button onclick="deleteProduct({{this.id}})">Eliminar</button>
-      </li>
-    {{/each}}
-  </ul>
+<a href="/">Ver Productos</a>
 
-  <a href="/">Ver Productos</a>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    
-    // Escuchar cuando un nuevo producto se agrega
-    socket.on('newProduct', (newProduct) => {
-      const productList = document.getElementById('product-list');
-      const newProductItem = document.createElement('li');
-      newProductItem.innerHTML = `
-        <strong>${newProduct.title}</strong><br>
-        Descripción: ${newProduct.description}<br>
-        Precio: $${newProduct.price}<br>
-        Categoría: ${newProduct.category}<br>
-        <button onclick="deleteProduct(${newProduct.id})">Eliminar</button>
-      `;
-      productList.appendChild(newProductItem);
-    });
+  socket.on('newProduct', (newProduct) => {
+    const productList = document.getElementById('product-list');
+    const newProductItem = document.createElement('li');
+    newProductItem.id = `product-${newProduct.id}`;
+    newProductItem.innerHTML = `
+      <strong>${newProduct.title}</strong><br>
+      Descripción: ${newProduct.description}<br>
+      Precio: $${newProduct.price}<br>
+      Categoría: ${newProduct.category}<br>
+      <button onclick="deleteProduct(${newProduct.id})">Eliminar</button>
+    `;
+    productList.appendChild(newProductItem);
+  });
 
-    // Escuchar cuando un producto es eliminado
-    socket.on('deletedProduct', (productId) => {
-      const productItem = document.getElementById(`product-${productId}`);
-      if (productItem) {
-        productItem.remove();
-      }
-    });
-
-    // Función para eliminar un producto
-    function deleteProduct(productId) {
-      fetch(`/api/products/${productId}`, { method: 'DELETE' })
-        .then(response => response.json())
-        .then(data => {
-          console.log(data);
-        })
-        .catch(error => console.error('Error eliminando producto:', error));
+  socket.on('deletedProduct', (productId) => {
+    const productItem = document.getElementById(`product-${productId}`);
+    if (productItem) {
+      productItem.remove();
     }
-  </script>
-{{/extend}}
+  });
+
+  function deleteProduct(productId) {
+    fetch(`/api/products/${productId}`, { method: 'DELETE' })
+      .then(response => response.json())
+      .then(data => console.log(data))
+      .catch(error => console.error('Error eliminando producto:', error));
+  }
+</script>

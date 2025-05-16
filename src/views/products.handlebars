@@ -1,0 +1,35 @@
+<h1>Listado de Productos</h1>
+
+<form method="GET" action="/products">
+  <input type="text" name="query" placeholder="Buscar categoría o estado" value="{{query}}">
+  <select name="sort">
+    <option value="">Ordenar por precio</option>
+    <option value="asc" {{#ifEquals sort 'asc'}}selected{{/ifEquals}}>Menor a mayor</option>
+    <option value="desc" {{#ifEquals sort 'desc'}}selected{{/ifEquals}}>Mayor a menor</option>
+  </select>
+  <button type="submit">Filtrar</button>
+</form>
+
+<ul>
+  {{#each products}}
+    <li>
+      <h3>{{this.title}} - ${{this.price}}</h3>
+      <p>{{this.description}}</p>
+      <p>Categoría: {{this.category}}</p>
+      <p>Stock: {{this.stock}}</p>
+    </li>
+  {{/each}}
+</ul>
+
+<div>
+  {{#if pagination.hasPrevPage}}
+    <a href="{{pagination.prevLink}}">Anterior</a>
+  {{/if}}
+
+  Página {{pagination.page}} de {{pagination.totalPages}}
+
+  {{#if pagination.hasNextPage}}
+    <a href="{{pagination.nextLink}}">Siguiente</a>
+  {{/if}}
+</div>
+

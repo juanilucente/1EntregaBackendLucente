@@ -1,17 +1,13 @@
-{{#extend 'main'}}
-  {{#content 'title'}}Productos{{/content}}
+<h1>Lista de Productos</h1>
+<ul>
+  {{#each products}}
+    <li>
+      <strong>{{this.title}}</strong><br>
+      Descripción: {{this.description}}<br>
+      Precio: ${{this.price}}<br>
+      Categoría: {{this.category}}<br>
+    </li>
+  {{/each}}
+</ul>
 
-  <h1>Lista de Productos</h1>
-  <ul>
-    {{#each products}}
-      <li>
-        <strong>{{this.title}}</strong><br>
-        Descripción: {{this.description}}<br>
-        Precio: ${{this.price}}<br>
-        Categoría: {{this.category}}<br>
-      </li>
-    {{/each}}
-  </ul>
-
-  <a href="/realtimeproducts">Ver Productos en Tiempo Real</a>
-{{/extend}}
+<a href="/realtimeproducts">Ver Productos en Tiempo Real</a>

@@ -2,46 +2,71 @@ import express from 'express';
 import { engine } from 'express-handlebars';
 import productRouter from './routes/products.router.js';
 import cartRouter from './routes/carts.router.js';
-import viewsRouter from './routes/views.router.js'; // Nuevo router para las vistas
+import viewsRouter from './routes/views.router.js';
 import { Server } from 'socket.io';
 import path from 'path';
-import { __dirname } from './utils.js'; // Vamos a crear esto también
+import { __dirname } from './utils.js';
+import connectDB from './db.js';
+import { Product } from './models/product.js';
 
 const app = express();
 const PORT = 8080;
 
-// Middleware para leer JSON y formularios
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+let io;
 
-// Motor de plantillas
-app.engine('handlebars', engine());
-app.set('view engine', 'handlebars');
-app.set('views', path.join(__dirname, '/views'));
+connectDB()
+  .then(() => {
+    console.log('Conexión a MongoDB exitosa');
 
-// Recursos estáticos (public)
-app.use(express.static(path.join(__dirname, '/public')));
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
 
-// Rutas API
-app.use('/api/products', productRouter);
-app.use('/api/carts', cartRouter);
+    app.engine(
+      'handlebars',
+      engine({
+        helpers: {
+          ifEquals: function (arg1, arg2, options) {
+            return arg1 == arg2 ? options.fn(this) : options.inverse(this);
+          },
+        },
+      })
+    );
+    app.set('view engine', 'handlebars');
+    app.set('views', path.join(__dirname, '/views'));
 
-// Rutas de vistas
-app.use('/', viewsRouter);
+    app.use(express.static(path.join(__dirname, '/public')));
 
-// Levantar servidor
-const serverHttp = app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+    app.use('/api/products', productRouter);
+    app.use('/api/carts', cartRouter);
+    app.use('/', viewsRouter);
 
-// WebSocket server
-export const io = new Server(serverHttp);
+    const serverHttp = app.listen(PORT, () => {
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
 
-io.on('connection', (socket) => {
-  console.log('Nuevo cliente conectado');
-  
-  // Aquí se conectan los eventos para productos y chat, los mensajes del chat serán enviados a todos los clientes
-  socket.on('newMessage', (message) => {
-    io.emit('newMessage', message);
+    io = new Server(serverHttp);
+
+    io.on('connection', async (socket) => {
+      console.log('Nuevo cliente conectado');
+
+      const products = await Product.find().lean();
+      socket.emit('initialProducts', products);
+
+      socket.on('newProduct', (product) => {
+        io.emit('newProduct', product);
+      });
+
+      socket.on('deletedProduct', (pid) => {
+        io.emit('deletedProduct', pid);
+      });
+
+      socket.on('newMessage', (message) => {
+        io.emit('newMessage', message);
+      });
+    });
+  })
+  .catch((error) => {
+    console.error('Error conectando a MongoDB:', error);
   });
-});
+
+export { io };

@@ -1,80 +1,91 @@
 import express from 'express';
-import { ProductManager } from '../productManager.js'; // Asumo que ya lo tenías
-import { io } from '../app.js'; // Importamos el WebSocket
+import fetch from 'node-fetch';
 
 const router = express.Router();
-const productManager = new ProductManager();
 
-// Ruta para la vista de inicio (home.handlebars)
-router.get('/', async (req, res) => {
+// Vista de inicio (redirige a /products)
+router.get('/', (req, res) => {
+  res.redirect('/products');
+});
+
+// Vista productos paginados con filtro y orden
+router.get('/products', async (req, res) => {
   try {
-    const products = await productManager.getProducts();
-    res.render('home', { products }); // Renderiza la vista home.handlebars con los productos
+    const { page = 1, limit = 10, sort, query } = req.query;
+
+    const url = new URL('http://localhost:8080/api/products');
+    url.searchParams.append('page', page);
+    url.searchParams.append('limit', limit);
+    if (sort) url.searchParams.append('sort', sort);
+    if (query) url.searchParams.append('query', query);
+
+    const response = await fetch(url.toString());
+    const data = await response.json();
+
+    res.render('products', {
+      products: data.payload,
+      pagination: {
+        totalPages: data.totalPages,
+        page: data.page,
+        hasPrevPage: data.hasPrevPage,
+        hasNextPage: data.hasNextPage,
+        prevPage: data.prevPage,
+        nextPage: data.nextPage,
+        prevLink: data.hasPrevPage ? `/products?page=${data.prevPage}&sort=${sort || ''}&query=${query || ''}` : null,
+        nextLink: data.hasNextPage ? `/products?page=${data.nextPage}&sort=${sort || ''}&query=${query || ''}` : null,
+      },
+      sort,
+      query,
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Hubo un problema al cargar los productos' });
+    res.status(500).send('Error al cargar productos paginados');
   }
 });
 
-// Ruta para la vista de productos en tiempo real (realtimeproducts.handlebars)
+// Vista detalle de producto por id
+router.get('/products/:pid', async (req, res) => {
+  try {
+    const { pid } = req.params;
+    const response = await fetch(`http://localhost:8080/api/products/${pid}`);
+    const product = await response.json();
+
+    if (!product || product.error) {
+      return res.status(404).render('error', { message: 'Producto no encontrado' });
+    }
+
+    res.render('productDetail', { product });
+  } catch (error) {
+    res.status(500).send('Error al cargar el detalle del producto');
+  }
+});
+
+// Vista carrito por id con productos poblados
+router.get('/carts/:cid', async (req, res) => {
+  try {
+    const { cid } = req.params;
+    const response = await fetch(`http://localhost:8080/api/carts/${cid}`);
+    const data = await response.json();
+
+    if (!data || data.status === 'error') {
+      return res.status(404).render('error', { message: 'Carrito no encontrado' });
+    }
+
+    res.render('cartDetail', { cart: data.payload });
+  } catch (error) {
+    res.status(500).send('Error al cargar el carrito');
+  }
+});
+
+// Vista productos en tiempo real (opcional)
 router.get('/realtimeproducts', async (req, res) => {
   try {
-    const products = await productManager.getProducts();
-    res.render('realTimeProducts', { products }); // Renderiza realTimeProducts.handlebars con los productos
+    const response = await fetch('http://localhost:8080/api/products');
+    const data = await response.json();
+    res.render('realTimeProducts', { products: data.payload });
   } catch (error) {
     res.status(500).json({ error: 'Hubo un problema al cargar los productos en tiempo real' });
   }
 });
 
-// Aquí creamos una ruta para agregar un producto y que el frontend se actualice en tiempo real
-router.post('/api/products', async (req, res) => {
-  const { title, description, code, price, stock, category, thumbnails } = req.body;
-  
-  if (!title || !description || !code || !price || !stock || !category) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  }
-
-  const newProduct = await productManager.addProduct({ title, description, code, price, stock, category, thumbnails });
-  
-  // Enviamos el nuevo producto a través del WebSocket para que todos los clientes lo reciban
-  io.emit('newProduct', newProduct);
-  
-  res.status(201).json(newProduct);
-});
-
-// Ruta para eliminar un producto
-router.delete('/api/products/:pid', async (req, res) => {
-  const { pid } = req.params;
-  const deletedProduct = await productManager.deleteProduct(pid);
-  
-  if (deletedProduct) {
-    // Emitimos el evento de eliminación para que los clientes se actualicen en tiempo real
-    io.emit('deletedProduct', pid);
-    res.status(200).json({ message: 'Producto eliminado correctamente' });
-  } else {
-    res.status(404).json({ error: 'Producto no encontrado' });
-  }
-});
-
-// Emitir los productos a los nuevos clientes cuando se conectan
-io.on('connection', async (socket) => {
-  console.log('Nuevo cliente conectado');
-  
-  // Emitir los productos existentes a los nuevos clientes
-  const products = await productManager.getProducts();
-  socket.emit('initialProducts', products);
-
-  // Escuchar eventos de productos nuevos o eliminados
-  socket.on('newProduct', (product) => {
-    io.emit('newProduct', product);
-  });
-  socket.on('deletedProduct', (pid) => {
-    io.emit('deletedProduct', pid);
-  });
-
-  // Escuchar los mensajes del chat
-  socket.on('newMessage', (message) => {
-    io.emit('newMessage', message); // Enviar el mensaje a todos los clientes conectados
-  });
-});
-
 export default router;
+
